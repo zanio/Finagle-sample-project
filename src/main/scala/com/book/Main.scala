@@ -27,7 +27,7 @@ object Main extends IOApp.Simple with Endpoint.Module[IO] with Logger {
   override def run: IO[Unit] = {
     val webClient = makeWebClient
     val nyTimesService = new NyTimesService(webClient)
-    val apis = new Endpoints(nyTimesService).endpoints
+    val apis = new RestApi(nyTimesService).endpoints
     val redisConnector = redisClient
     val cacheFilter = new ResponseCachingFilter(redisConnector)
 

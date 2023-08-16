@@ -12,7 +12,7 @@ import java.time.LocalDate
  * Project working on ing_assessment
  * New File created by ani in  ing_assessment @ 15/08/2023  12:04
  */
-class Endpoints(nyTimesService: NyTimesService) extends Endpoint.Module[IO] {
+class RestApi(nyTimesService: NyTimesService) {
 
   private def healthcheck: Endpoint[IO, String] = get(pathEmpty) {
     Ok("Healthy")
