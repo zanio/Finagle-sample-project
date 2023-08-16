@@ -24,7 +24,7 @@ object AppConfig extends Logger {
   private val redisPassword = config.getString("redis.password")
   private val redisConnectionString = s"$redisHost:$redisPort"
 
-  private val webClientConnectionString = s"$destination:433"
+  private val webClientConnectionString = s"$destination:443"
 
 
   val logFilter: SimpleFilter[Request, Response] = (request: Request, service: Service[Request, Response]) => {
@@ -38,20 +38,14 @@ object AppConfig extends Logger {
     redisClient
   }
 
-  private val TokenHeaderFilter = new SimpleFilter[Request, Response] {
-    def apply(request: Request, service: Service[Request, Response]): Future[Response] = {
-      request.headerMap.add("api-key", s"$nyTimesToken") // Add the token header
-      service(request)
-    }
-  }
 
   def makeWebClient : Service[Request, Response] =
-    Http.client.withLabel(clientLabel)
+          Http.client.withLabel(clientLabel)
            .withRequestTimeout(1.second)
            .filtered(logFilter)
-           .filtered(TokenHeaderFilter)
            .withSessionPool.maxSize(1)
-           .newService(webClientConnectionString)
+            .withTransport.tls(destination)
+           .newService("api.nytimes.com:443")
 }
 
 

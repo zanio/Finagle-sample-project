@@ -1,5 +1,5 @@
 import Dependencies._
-val finchVersion = "0.32.0"
+val finchVersion = "0.33.0"
 val circeVersion = "0.12.3"
 val scalatestVersion = "3.2.0"
 ThisBuild / scalaVersion     := "2.13.2"
@@ -16,9 +16,10 @@ lazy val root = (project in file("."))
       "com.github.finagle" %% "finchx-core" % finchVersion,
       "com.github.finagle" %% "finchx-circe" % finchVersion,
       "io.circe" %% "circe-generic" % circeVersion,
-      "org.scalatest" %% "scalatest" % scalatestVersion % "test",
-      "io.circe" %% "circe-parser" % circeVersion % "test",
-//      munit % Test,
+//      "com.twitter" %% "finagle-http" % "21.8.0",
+
+//      "io.circe" %% "circe-parser" % circeVersion % "test",
+      munit % Test,
 //      "ch.qos.logback" % "logback-classic" % "1.4.7",
 //      "com.typesafe" % "config" % "1.4.2",
 //      "com.github.finagle" %% "finchx-core" % "0.33.0",
@@ -28,7 +29,7 @@ lazy val root = (project in file("."))
       "com.twitter" %% "finagle-redis" % "22.12.0",
 //
 ////      "com.github.finagle" %% "finch-test" % "0.34.1" % Test,
-//      scalatest % Test,
+      scalatest % Test,
 
 
     )
