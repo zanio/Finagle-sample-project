@@ -19,11 +19,11 @@ object IngRestApp extends App {
   val redisConnector = redisClient
   val cacheFilter = new ResponseCachingFilter(redisConnector)
 
-  def service: Service[Request, Response] = cacheFilter andThen(Bootstrap
+  def service: Service[Request, Response] = cacheFilter andThen (Bootstrap
     .serve[Application.Json](apis)
     .toService)
 
-  Await.ready(Http.serve(":8081", service))
+  Await.ready(Http.server.serve(":8081", service))
 }
 
 

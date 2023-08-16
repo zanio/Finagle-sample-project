@@ -28,12 +28,12 @@ class NyTimesService(webClient: Service[Request, Response]) extends Logger {
   def getBooks: Future[Seq[WcBook]] = {
     val bookHistoryPath = path + s"?api-key=$nyTimesToken"
     val request = Request(s"${bookHistoryPath}")
-    logger.info(s"Request received for getBooks : ${request}")
+    logger.info(s"Request received for getBooks : ${request.path} and the path is : ${bookHistoryPath}")
     request.method(com.twitter.finagle.http.Method.Get)
     val response = webClient(request)
     response.flatMap(resp => {
       val content = resp.getContentString()
-      logger.info(s"Response received for getBooks : ${content}")
+      logger.info(s"Response received for getBooks : ${content} responsePath : ${resp.status}")
       val bookResponse = io.circe.parser.decode[WebclientResponse](content).getOrElse(WebclientResponse.empty)
       logger.info(s"Response received for getBooks : ${bookResponse.results}")
       val books = bookResponse.results.map(item => {
