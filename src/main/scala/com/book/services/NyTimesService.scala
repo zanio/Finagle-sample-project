@@ -21,8 +21,8 @@ import io.finch.circe._
  */
 class NyTimesService(webClient: Service[Request, Response]) extends Logger {
   private val config = com.typesafe.config.ConfigFactory.load()
+  private val nyTimesToken = config.getString("nytimes.apiKey")
 
-  val path: ConfigObject = config.getObject("nytimes.path")
 
 
   def getListNames: Future[List[ListName]] = {
@@ -80,5 +80,27 @@ class NyTimesService(webClient: Service[Request, Response]) extends Logger {
  }
 
 
+  def getBooks: Future[Seq[WcBook]] = {
+    val bookHistoryPath = path + s"?api-key=$nyTimesToken"
+    val request = Request(s"${bookHistoryPath}")
+    logger.info(s"Request received for getBooks : ${request}")
+    request.method(com.twitter.finagle.http.Method.Get)
+    val response = webClient(request)
+    response.flatMap(resp => {
+      val content = resp.getContentString()
+      val bookResponse = io.circe.parser.decode[WebclientResponse](content)(decodeWebclientResponse).getOrElse(WebclientResponse.empty)
+      logger.info(s"Response received for getBooks : ${bookResponse.results}")
+      //      val decodeBookResponse = decode[Seq[BookHistory]](bookResponse.results)(decodeBookHistory).getOrElse(Seq.empty[BookHistory])
+      //      val books = decodeBookResponse.map(item => {
+      //        val maybePublishedDate = item.rank_history.headOption.map(_.published_date)
+      //        WcBook(item.title, item.author, maybePublishedDate,item.publisher)
+      //      })
+      Future.value(List.empty[WcBook])
+    })
+      .onFailure(ex => {
+        logger.error(s"Error in getBooks : ${ex.getMessage}")
+        Future.exception(ex)
+      })
+  }
 
 }
