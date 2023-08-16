@@ -9,6 +9,12 @@ import com.twitter.finagle.http.{Request, Response}
 import com.twitter.util.Future
 import com.typesafe.config.ConfigObject
 import io.circe.generic.codec.DerivedAsObjectCodec.deriveCodec
+import io.circe._
+import io.circe.generic.auto._
+import io.finch.Error.NotPresent
+import io.finch._
+import io.finch.catsEffect._
+import io.finch.circe._
 /**
  * Project working on ing_assessment
  * New File created by ani in  ing_assessment @ 15/08/2023  15:45
@@ -29,7 +35,7 @@ class NyTimesService(webClient: Service[Request, Response]) extends Logger {
 
     response.flatMap(resp => {
       val content = resp.getContentString()
-      val listNames = io.circe.parser.decode[List[ListName]](content).getOrElse(List.empty[ListName])
+      val listNames = parser.decode[List[ListName]](content).getOrElse(List.empty[ListName])
       Future.value(listNames)
     })
   }

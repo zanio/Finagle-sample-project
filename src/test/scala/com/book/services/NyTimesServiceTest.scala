@@ -1,6 +1,6 @@
 package com.book.services
 
-import munit.FunSuite
+import org.scalatest.FunSuite
 
 /**
  * Project working on ing_assessment
