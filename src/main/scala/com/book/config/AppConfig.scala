@@ -41,11 +41,13 @@ object AppConfig extends Logger {
 
   def makeWebClient : Service[Request, Response] =
           Http.client.withLabel(clientLabel)
-           .withRequestTimeout(1.second)
+//           .withRequestTimeout(1.second)
 //           .filtered(logFilter)
 //           .withSessionPool.maxSize(1)
-            .withTransport.tls("api.nytimes.com")
-           .newService("api.nytimes.com:443")
+//            .withTransport.tls("api.nytimes.com")
+            .withTls("api.nytimes.com")
+            .withTlsWithoutValidation
+            .newService("api.nytimes.com:443")
 }
 
 
