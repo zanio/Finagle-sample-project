@@ -8,20 +8,19 @@ import com.twitter.finagle.{Http, Service}
 import com.twitter.util.Await
 import io.circe.generic.auto._
 import io.finch._
-import io.finch.catsEffect._
 import io.finch.circe._
 
 object IngRestApp extends App {
 
   val webClient = makeWebClient
   val nyTimesService = new NyTimesService(webClient)
-  val apis = new RestApi(nyTimesService).endpoints
-  val redisConnector = redisClient
-  val cacheFilter = new ResponseCachingFilter(redisConnector)
+  private val apis = new RestApi(nyTimesService).endpoints
+  private val redisConnector = redisClient
+  private val cacheFilter = new ResponseCachingFilter(redisConnector)
 
-  def service: Service[Request, Response] = cacheFilter andThen (Bootstrap
+  def service: Service[Request, Response] = cacheFilter andThen  Bootstrap
     .serve[Application.Json](apis)
-    .toService)
+    .toService
 
   Await.ready(Http.server.serve(":8081", service))
 }

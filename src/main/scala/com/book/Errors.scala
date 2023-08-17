@@ -7,7 +7,7 @@ package com.book
 /**
  * The parent error from which most API errors extend. Thrown whenever something in the api goes wrong.
  */
-abstract class CommonError(msg: String) extends Exception(msg) {
+abstract class CommonError(msg: String)  extends Exception(msg) {
   def message: String
 }
 
@@ -28,3 +28,5 @@ case class MissingIdentifier(message: String) extends CommonError(message)
  * @param message An error message
  */
 case class RecordNotFound(message: String) extends CommonError(message)
+
+case class ExternalServiceError(message: String) extends CommonError(message)

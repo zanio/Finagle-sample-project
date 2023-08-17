@@ -1,12 +1,16 @@
 package com.book.config
 
+import com.book.models.WebClientModels
+import com.book.models.WebClientModels.{WcBook, WcBookResponse}
+import com.book.util.Helper._
 import com.book.util.Logger
 import com.twitter.conversions.DurationOps.richDurationFromInt
-import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.finagle.redis.Client
+import com.twitter.finagle.{Service, SimpleFilter}
+import com.twitter.io.Buf
 import com.twitter.util.Future
-
+import io.circe.syntax.EncoderOps
 /**
  * Project working on ing_assessment
  * New File created by ani in  ing_assessment @ 15/08/2023  16:32
@@ -14,38 +18,78 @@ import com.twitter.util.Future
 class ResponseCachingFilter(cache: Client) extends SimpleFilter[Request, Response] with Logger{
 
   def generateCacheKey(request: Request): String = {
-    request.path
+    val author = request.getParam("author")
+    logger.info(s"Generating cache key for request: ${request.path}:$author")
+    s"${request.path}:$author"
+
   }
 
   override def apply(request: Request, service: Service[Request, Response]): Future[Response] = {
     val cacheKey = generateCacheKey(request)
     val cacheKeyBuf = com.twitter.io.Buf.Utf8(cacheKey)
     val checkKey = cache.get(cacheKeyBuf)
+    val filterResponseByDate = request.getParam("year", "")
+    val author = request.getParam("author")
+    val cacheResponse = Response(request.version, com.twitter.finagle.http.Status.Ok)
+
+    if(author == null || author.isEmpty){
+      return  proceedWithRequest(request, service, cacheKey, cacheKeyBuf, cacheResponse, filterResponseByDate)
+    }
+    if(filterResponseByDate.nonEmpty && !isValidYear(filterResponseByDate)){
+      logger.info(s"Invalid year passed in request: $filterResponseByDate")
+      return  proceedWithRequest(request, service, cacheKey, cacheKeyBuf, cacheResponse, filterResponseByDate)
+    }
 
     checkKey.flatMap {
       case Some(value) =>
         logger.info(s"Cache hit for key: $cacheKey")
-        val convertValue = com.twitter.io.Buf.Utf8.unapply(value) match {
-          case Some(value) => value
-          case _ => ""
+        val decodedListWcBook = com.twitter.io.Buf.Utf8.unapply(value) match {
+          case Some(redisValue) => decodeResponse(redisValue)
         }
-        val response = Response(request.version, com.twitter.finagle.http.Status.Ok)
-        response.contentString = convertValue
-        Future.value(response)
+        cacheResponse.contentString = filterResponse(filterResponseByDate, decodedListWcBook.results).asJson(WebClientModels.encodeWcBookResponse).toString()
+        Future.value(cacheResponse)
       case None =>
         logger.info(s"Cache miss for key: $cacheKey")
-        service(request).flatMap { response =>
-          if (response.status.code == 200 && response.contentString.nonEmpty && request.path == "") {
-            logger.info(s"Setting cache for key: $cacheKey")
-            cache.setEx(cacheKeyBuf, 180.seconds.inLongSeconds, com.twitter.io.Buf.Utf8(response.contentString))
-          }
-          // filter
-          Future.value(response)
-        }
+        proceedWithRequest(request, service, cacheKey, cacheKeyBuf, cacheResponse, filterResponseByDate)
     }
-
 
   }
 
+  private def proceedWithRequest(request: Request,
+                                 service: Service[Request, Response],
+                                 cacheKey: String, cacheKeyBuf: Buf,
+                                 cacheResponse: Response,
+                                 filterResponseByDate: String) = {
+    service(request).flatMap { response =>
+      if (response.status.code == 200 && response.getContentString().nonEmpty && request.path.contains("books")) {
+        val resp = decodeResponse(response.getContentString())
+
+        logger.info(s"Setting cache for key: $cacheKey")
+        cache.setEx(cacheKeyBuf, 180.seconds.inLongSeconds,
+          com.twitter.io.Buf.Utf8(resp.asJson((WebClientModels.encodeWcBookResponse)).toString()))
+        cacheResponse.contentString = filterResponse(filterResponseByDate, resp.results).asJson(WebClientModels.encodeWcBookResponse).toString()
+        Future.value(cacheResponse)
+      } else {
+        Future.value(response)
+      }
+    }
+  }
+
+  private def decodeResponse(value: String) = {
+    io.circe.parser.decode[WcBookResponse](value)(WebClientModels.decodeWcBookResponse) match {
+      case Right(value) => value
+      case Left(ex) =>
+        logger.error(s"Error occurred while trying to decode value: $ex")
+        WcBookResponse.empty
+    }
+  }
+
+  private def filterResponse(filterResponseByDate: String, decodedListWcBook: Seq[WcBook]):WcBookResponse = {
+    if (filterResponseByDate.nonEmpty) {
+      WcBookResponse(decodedListWcBook.filter(_.year.contains(filterResponseByDate)))
+    } else {
+      WcBookResponse(decodedListWcBook)
+    }
+  }
 }
 

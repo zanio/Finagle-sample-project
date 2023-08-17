@@ -5,8 +5,6 @@ import com.twitter.conversions.DurationOps.richDurationFromInt
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.finagle.redis.Client
 import com.twitter.finagle.{Http, Redis, Service, SimpleFilter}
-import com.twitter.util.Future
-import com.typesafe.config.ConfigObject
 
 /**
  * Project working on ing_assessment
@@ -17,7 +15,6 @@ object AppConfig extends Logger {
 
   private val destination: String = config.getString("nytimes.host")
   private val clientLabel = config.getString("nytimes.clientLabel")
-  private val nyTimesToken = config.getString("nytimes.apiKey")
 
   private val redisHost = config.getString("redis.host")
   private val redisPort = config.getInt("redis.port")
@@ -40,14 +37,13 @@ object AppConfig extends Logger {
 
 
   def makeWebClient : Service[Request, Response] =
-          Http.client.withLabel(clientLabel)
-           .withRequestTimeout(1.second)
+          Http.client
+            .withLabel(clientLabel)
+           .withRequestTimeout(6.second)
            .filtered(logFilter)
            .withSessionPool.maxSize(1)
-//            .withTransport.tls("api.nytimes.com")
-//            .withTls("api.nytimes.com")
-//            .withTlsWithoutValidation
-            .newService("api.nytimes.com:80")
+           .withTransport.tls(destination)
+           .newService(webClientConnectionString)
 }
 
 
