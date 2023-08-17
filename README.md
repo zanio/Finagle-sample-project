@@ -29,4 +29,4 @@ The application has 2 endpoints, the health endpoint and the fetch books endpoin
 | GET    | `//me/books/list?author={author}&year={TheYearThatBookWasPublished}` | Fetches books based on author and year of publication |
 | GET    | `/health`                           | Health endpoint to check the status of the application |
 
-NB: The fetch books endpoint requires an API key to be passed in the header as `api-key`
+NB: The `year` query parameter is optional, and it can be a single year or comma separated years
