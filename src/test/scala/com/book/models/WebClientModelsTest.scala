@@ -1,5 +1,6 @@
 package com.book.models
 
+import com.book.models.RestModel.ResponseEntity
 import io.circe.syntax.EncoderOps
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -26,8 +27,16 @@ class WebClientModelsTest extends AnyFlatSpec with Matchers {
       decode[WcBookResponse](wcBookResponse.asJson.noSpaces) == Right(wcBookResponse)
     }
 
+
   }
 
+  "ResponseEntity encoder and decoder" should "round-trip correctly" in {
+    forAll { (responseEntity: ResponseEntity) =>
+      decode[ResponseEntity](responseEntity.asJson.noSpaces) == Right(responseEntity)
+    }
+
+
+  }
 
 
 

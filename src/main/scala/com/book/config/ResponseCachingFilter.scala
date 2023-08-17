@@ -1,7 +1,7 @@
 package com.book.config
 
-import com.book.models.WebClientModels
-import com.book.models.WebClientModels.{WcBook, WcBookResponse}
+import com.book.models.RestModel
+import com.book.models.WebClientModels.WcBook
 import com.book.util.Helper._
 import com.book.util.Logger
 import com.twitter.conversions.DurationOps.richDurationFromInt
@@ -10,12 +10,16 @@ import com.twitter.finagle.redis.Client
 import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.io.Buf
 import com.twitter.util.Future
+import com.typesafe.config.Config
 import io.circe.syntax.EncoderOps
 /**
  * Project working on ing_assessment
  * New File created by ani in  ing_assessment @ 15/08/2023  16:32
  */
-class ResponseCachingFilter(cache: Client) extends SimpleFilter[Request, Response] with Logger{
+class ResponseCachingFilter(cache: Client)(implicit val config: Config) extends SimpleFilter[Request, Response] with Logger{
+  import RestModel._
+
+    private val REDIS_TTL = config.getInt("redis.ttl")
 
   def generateCacheKey(request: Request): String = {
     val author = request.getParam("author")
@@ -46,7 +50,8 @@ class ResponseCachingFilter(cache: Client) extends SimpleFilter[Request, Respons
         val decodedListWcBook = com.twitter.io.Buf.Utf8.unapply(value) match {
           case Some(redisValue) => decodeResponse(redisValue)
         }
-        cacheResponse.contentString = filterResponse(filterResponseByDate, decodedListWcBook.results).asJson(WebClientModels.encodeWcBookResponse).toString()
+        cacheResponse.contentString = filterResponse(filterResponseByDate,
+          decodedListWcBook.result).asJson(encodeResponseEntity).noSpaces
         Future.value(cacheResponse)
       case None =>
         logger.info(s"Cache miss for key: $cacheKey")
@@ -65,9 +70,9 @@ class ResponseCachingFilter(cache: Client) extends SimpleFilter[Request, Respons
         val resp = decodeResponse(response.getContentString())
 
         logger.info(s"Setting cache for key: $cacheKey")
-        cache.setEx(cacheKeyBuf, 180.seconds.inLongSeconds,
-          com.twitter.io.Buf.Utf8(resp.asJson((WebClientModels.encodeWcBookResponse)).toString()))
-        cacheResponse.contentString = filterResponse(filterResponseByDate, resp.results).asJson(WebClientModels.encodeWcBookResponse).toString()
+        cache.setEx(cacheKeyBuf, REDIS_TTL.seconds.inLongSeconds,
+          com.twitter.io.Buf.Utf8(resp.asJson(encodeResponseEntity).noSpaces))
+        cacheResponse.contentString = filterResponse(filterResponseByDate, resp.result).asJson(encodeResponseEntity).noSpaces
         Future.value(cacheResponse)
       } else {
         Future.value(response)
@@ -76,19 +81,20 @@ class ResponseCachingFilter(cache: Client) extends SimpleFilter[Request, Respons
   }
 
   private def decodeResponse(value: String) = {
-    io.circe.parser.decode[WcBookResponse](value)(WebClientModels.decodeWcBookResponse) match {
+    io.circe.parser.decode[ResponseEntity](value) match {
       case Right(value) => value
       case Left(ex) =>
-        logger.error(s"Error occurred while trying to decode value: $ex")
-        WcBookResponse.empty
+        logger.error(s"Error occurred while trying to decode: $ex")
+        ResponseEntity.empty
     }
   }
 
-  private def filterResponse(filterResponseByDate: String, decodedListWcBook: Seq[WcBook]):WcBookResponse = {
+  private def filterResponse(filterResponseByDate: String, data: List[WcBook]):ResponseEntity = {
     if (filterResponseByDate.nonEmpty) {
-      WcBookResponse(decodedListWcBook.filter(_.year.contains(filterResponseByDate)))
+      val filteredDataWcBookResponse = data.filter(_.year.contains(filterResponseByDate))
+      ResponseEntity.success(filteredDataWcBookResponse)
     } else {
-      WcBookResponse(decodedListWcBook)
+      ResponseEntity.success(data)
     }
   }
 }

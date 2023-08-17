@@ -5,13 +5,13 @@ import com.twitter.conversions.DurationOps.richDurationFromInt
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.finagle.redis.Client
 import com.twitter.finagle.{Http, Redis, Service, SimpleFilter}
+import com.typesafe.config.Config
 
 /**
  * Project working on ing_assessment
  * New File created by ani in  ing_assessment @ 15/08/2023  13:56
  */
-object AppConfig extends Logger {
-  private val config = com.typesafe.config.ConfigFactory.load()
+class AppConfig()(implicit val config: Config) extends Logger {
 
   private val destination: String = config.getString("nytimes.host")
   private val clientLabel = config.getString("nytimes.clientLabel")
@@ -31,7 +31,7 @@ object AppConfig extends Logger {
 
   def redisClient: Client =  {
     val redisClient = Redis.newRichClient(redisConnectionString)
-    redisClient .auth(com.twitter.io.Buf.Utf8(redisPassword))
+    redisClient.auth(com.twitter.io.Buf.Utf8(redisPassword))
     redisClient
   }
 

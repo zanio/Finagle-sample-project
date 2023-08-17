@@ -18,15 +18,7 @@ abstract class CommonError(msg: String)  extends Exception(msg) {
 case class InvalidInput(message: String) extends CommonError(message)
 
 /**
- * Thrown when the given object is missing a unique ID.
- * @param message An error message
+ * Thrown when the object given is invalid. This should be used in the context of an external service
+ * @param message
  */
-case class MissingIdentifier(message: String) extends CommonError(message)
-
-/**
- * Thrown when the given record does not exist in the database.
- * @param message An error message
- */
-case class RecordNotFound(message: String) extends CommonError(message)
-
 case class ExternalServiceError(message: String) extends CommonError(message)

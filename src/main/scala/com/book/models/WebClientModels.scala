@@ -62,20 +62,20 @@ object WebClientModels {
     ("publisher", Json.fromString(a.publisher.getOrElse("")))
   )
 
-  case class WcBookResponse(results: Seq[WcBook])
+  case class WcBookResponse(books: List[WcBook])
 
   implicit val decodeWcBookResponse: Decoder[WcBookResponse] = (c: HCursor) => for {
-    results <- c.downField("results").as[List[WcBook]]
+    results <- c.downField("books").as[List[WcBook]]
   } yield {
     WcBookResponse(results)
   }
 
   implicit val encodeWcBookResponse: Encoder[WcBookResponse] = (a: WcBookResponse) => Json.obj(
-    ("results", Json.fromValues(a.results.map(encodeWcBook.apply)))
+    ("books", Json.fromValues(a.books.map(encodeWcBook.apply)))
   )
 
   object WcBookResponse {
-    def empty = WcBookResponse(Seq.empty)
+    def empty = WcBookResponse(List.empty)
   }
 
 

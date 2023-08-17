@@ -1,15 +1,16 @@
 package com.book
 
 import cats.effect.IO
-import com.book.models.WebClientModels.WcBookResponse
+import com.book.models.RestModel.ResponseEntity
+import com.book.models.WebClientModels.{WcBook, WcBookResponse}
 import com.book.services.NyTimesService
 import com.book.util.Helper.isValidYear
 import com.book.util.Logger
+import com.twitter.util.Future
 import io.circe._
 import io.finch._
 import io.finch.catsEffect._
 import shapeless.{:+:, CNil}
-// import http status
 import com.twitter.finagle.http.Status
 
 /**
@@ -51,21 +52,23 @@ class RestApi(nyTimesService: NyTimesService) extends Logger{
    * This endpoint will fetch the books from nytimes api
    * @return
    */
-  private def fetchBooks: Endpoint[IO, WcBookResponse]  = get(basePath :: validAuthor :: validYear)  {
+  private def fetchBooks: Endpoint[IO, ResponseEntity]  = get(basePath :: validAuthor :: validYear)  {
      (author: String, year: Option[String]) =>
       nyTimesService.getBooks(author).map {
-        case Right(books) => Ok(books)
+        case Right(value) => Ok(ResponseEntity.success(value.books))
         case Left(error) => throw error
       }
 
-  }.handle{
+  }.rescue {
     case e: CommonError =>
       logger.error(s"validation Error : ${e.getMessage}")
-      BadRequest(e)
-    case _ => InternalServerError(new Exception("Something went wrong"))
+      IO(Output.payload(ResponseEntity.failure400(e.getMessage), Status.BadRequest))
+    case e =>
+      logger.error(s"Internal Server Error : ${e.getMessage}")
+      IO(Output.payload(ResponseEntity.failure500(e.getMessage), Status.InternalServerError))
   }
 
-  val endpoints: Endpoint[IO, WcBookResponse :+: String :+: CNil] =  fetchBooks :+: healthcheck
+  val endpoints: Endpoint[IO, ResponseEntity :+: String :+: CNil] =  fetchBooks :+: healthcheck
 
 
 }

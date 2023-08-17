@@ -20,7 +20,7 @@ object Helper {
   }
 
   /**
-   * check if the year is valid, I'm using 1900 as the minimum year, because I don't think we have books before that
+   * check if the year is valid, I'm using 1900 as the minimum year, because I don't think we have books before that year
    * @param year
    * @return
    */

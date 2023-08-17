@@ -7,19 +7,22 @@ import com.book.util.Logger
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.util.{Await, Future}
+import com.typesafe.config.Config
 import org.mockito.ArgumentMatchers.any
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.mockito.MockitoSugar
-
+import com.typesafe.config.ConfigFactory
 
 /**
  * Project working on ing_assessment
  * New File created by ani in  ing_assessment @ 15/08/2023  23:47
  */
 class NyTimesServiceTest extends AnyFlatSpec with Matchers with ScalaFutures with BeforeAndAfterAll with MockitoSugar with Logger {
+
+  implicit val config:Config = ConfigFactory.load()
 
   var mockClient: Service[Request, Response] = mock[Service[Request, Response]]
   var nyTimesService : NyTimesService = _
@@ -44,9 +47,9 @@ class NyTimesServiceTest extends AnyFlatSpec with Matchers with ScalaFutures wit
 
     result.map {
       case Right(response) =>
-        response.results should have length 1
-        response.results.head.title shouldBe "Book 1"
-        response.results.head.author shouldBe "Author 1"
+        response.books should have length 1
+        response.books.head.title shouldBe "Book 1"
+        response.books.head.author shouldBe "Author 1"
       case Left(_) => fail("Expected Right, got Left")
     }
   }

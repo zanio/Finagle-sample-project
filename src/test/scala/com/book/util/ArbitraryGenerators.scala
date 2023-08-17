@@ -1,5 +1,7 @@
 package com.book.util
 
+import com.book.models.RestModel.ResponseEntity
+
 
 /**
  * Project working on ing_assessment
@@ -23,8 +25,16 @@ object ArbitraryGenerators {
 
   implicit val arbWcBookResponse: Arbitrary[WcBookResponse] = Arbitrary {
     for {
-      data <- Gen.containerOfN[Seq, WcBook](10,arbWcBook.arbitrary)
+      data <- Gen.containerOfN[List, WcBook](10,arbWcBook.arbitrary)
     } yield WcBookResponse(data)
+  }
+
+  implicit val arbResponseEntity: Arbitrary[ResponseEntity] = Arbitrary {
+    for {
+      status <- Gen.choose(200, 500)
+      message <- Gen.alphaStr
+      data <- arbWcBookResponse.arbitrary
+    } yield ResponseEntity(status, message, data.books)
   }
 
 }
