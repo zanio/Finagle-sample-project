@@ -1,21 +1,13 @@
 package com.book.models
 
 
-
-import shapeless.CNil
-
 import java.time.LocalDate
 
-/**
- * Project working on ing_assessment
- * New File created by ani in  ing_assessment @ 15/08/2023  11:41
- */
 object WebClientModels {
 
   import io.circe.{Decoder, Encoder, HCursor, Json}
 
 
-//  implicit val customConfig: Configuration = Configuration.default.withDefaults
   case class BookHistory(title: String, author: String, price: String, publisher: Option[String], ranks_history: Seq[RankHistory])
 
   implicit val decodeBookHistory: Decoder[BookHistory] = (c: HCursor) => for {
@@ -28,8 +20,6 @@ object WebClientModels {
     BookHistory(title, author, price, publisher, ranks_history)
   }
 
-  // decoder for list of of BookHistory
-
   case class WebclientResponse(status: String, num_results: Int, results: Seq[BookHistory])
 
   implicit val decodeWebclientResponse: Decoder[WebclientResponse] = (c: HCursor) => for {
@@ -41,7 +31,7 @@ object WebClientModels {
   }
 
   object WebclientResponse {
-    def empty = WebclientResponse("", 0, Seq.empty)
+    def empty: WebclientResponse = WebclientResponse("", 0, Seq.empty)
   }
 
   case class WcBook(title: String, author: String, year: Option[String] = None, publisher: Option[String])
@@ -49,7 +39,7 @@ object WebClientModels {
   implicit val decodeWcBook: Decoder[WcBook] = (c: HCursor) => for {
     title <- c.downField("title").as[String]
     author <- c.downField("author").as[String]
-    year <- c.downField("year").as[Option[String]] // this is not working,
+    year <- c.downField("year").as[Option[String]]
     publisher <- c.downField("publisher").as[Option[String]]
   } yield {
     WcBook(title, author, year, publisher)
@@ -75,7 +65,7 @@ object WebClientModels {
   )
 
   object WcBookResponse {
-    def empty = WcBookResponse(List.empty)
+    def empty: WcBookResponse = WcBookResponse(List.empty)
   }
 
 

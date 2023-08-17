@@ -4,24 +4,26 @@ import com.book.models.WebClientModels.WcBook
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-/**
- * Project working on ing_assessment
- * New File created by ani in  ing_assessment @ 17/08/2023  05:19
- */
-class HelperTest extends AnyFlatSpec with Matchers {
+final class HelperTest extends AnyFlatSpec with Matchers {
 
   it should ("parseObj when given valid json") in {
     val wcBookJson = """{"title":"War and Peace","author":"Leo Tolstoy","year":"1869"}"""
-    val result = Helper.parseObj[WcBook](wcBookJson)
-    assert(result.title == "War and Peace")
-    assert(result.author == "Leo Tolstoy")
+    Helper.parseObj[WcBook](wcBookJson) match {
+      case Right(result) =>
+        assert(result.title == "War and Peace")
+        assert(result.author == "Leo Tolstoy")
+      case Left(_) => fail("parseObj failed")
+    }
   }
 
   it should "parseObj when given invalid json" in {
     val wcBookJson = """{"title":"War and Peace","author":"Leo Tolstoy","year":"1869""""
-    intercept[io.circe.ParsingFailure] {
+
       Helper.parseObj[WcBook](wcBookJson)
-    }
+      match {
+        case Right(_) => fail("parseObj should have failed")
+        case Left(_) => succeed
+      }
 
   }
 
@@ -29,10 +31,24 @@ class HelperTest extends AnyFlatSpec with Matchers {
     assert(Helper.isValidYear("2021"))
   }
 
-  it should "isValidYear when given invalid year" in {
+  it should "assert when given invalid year" in {
     assert(!Helper.isValidYear("20211"))
     assert(!Helper.isValidYear("202"))
     assert(!Helper.isValidYear("202a"))
   }
+
+  it should "assert isValidYears when given valid years" in {
+    assert(Helper.isValidYears("2021,2022"))
+  }
+
+  it should "assert isValidYears when given invalid years" in {
+    assert(!Helper.isValidYears("2021,2022x"))
+  }
+
+  it should "assert isValidYears when given year without value" in {
+    assert(Helper.isValidYears(""))
+  }
+
+
 
 }

@@ -1,8 +1,8 @@
 package com.book.util
-/**
- * Project working on ing_assessment
- * New File created by ani in  ing_assessment @ 16/08/2023  22:42
- */
+
+import com.book.{CommonError, ParsingError}
+import io.circe.parser.decode
+import io.circe.Decoder
 object Helper {
 
   /**
@@ -12,10 +12,10 @@ object Helper {
    * @tparam T
    * @return
    */
-  def parseObj[T](content: String)(implicit decoder: io.circe.Decoder[T]): T = {
-    io.circe.parser.decode[T](content) match {
-      case Left(error) => throw error
-      case Right(value) => value
+  def parseObj[T](content: String)(implicit decoder: Decoder[T]): Either[CommonError, T] = {
+    decode[T](content) match {
+      case Left(error) => Left(ParsingError(error.getMessage))
+      case Right(value) => Right(value)
     }
   }
 
@@ -28,5 +28,13 @@ object Helper {
     val currentYear = java.time.LocalDate.now.getYear
     (year.nonEmpty && year.length == 4) &&
     (scala.util.Try(year.toInt).isSuccess && (year.toInt >= 1900 && year.toInt <= currentYear))
+  }
+
+  def isValidYears(years: String): Boolean = {
+      years.split(",").toList match {
+        case yearList if years.nonEmpty =>
+          yearList.forall(isValidYear)
+        case _ => true
+      }
   }
 }

@@ -16,11 +16,7 @@ import org.scalatest.matchers.should.Matchers
 import org.mockito.MockitoSugar
 import com.typesafe.config.ConfigFactory
 
-/**
- * Project working on ing_assessment
- * New File created by ani in  ing_assessment @ 15/08/2023  23:47
- */
-class NyTimesServiceTest extends AnyFlatSpec with Matchers with ScalaFutures with BeforeAndAfterAll with MockitoSugar with Logger {
+final class NyTimesServiceTest extends AnyFlatSpec with Matchers with ScalaFutures with BeforeAndAfterAll with MockitoSugar with Logger {
 
   implicit val config:Config = ConfigFactory.load()
 

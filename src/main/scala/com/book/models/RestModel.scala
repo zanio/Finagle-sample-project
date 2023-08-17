@@ -1,24 +1,19 @@
 package com.book.models
 
-import com.book.models.WebClientModels.{WcBookResponse}
 
-/**
- * Project working on ing_assessment
- * New File created by ani in  ing_assessment @ 17/08/2023  13:10
- */
 object RestModel {
-  import io.circe.{Decoder, Encoder, HCursor, Json}
   import WebClientModels._
+  import io.circe.{Decoder, Encoder, HCursor, Json}
   case class ResponseEntity(status: Int, message: String, result: List[WcBook])
 
   object ResponseEntity {
-    def empty = ResponseEntity(200, "", List.empty[WcBook])
+    def empty: ResponseEntity = ResponseEntity(200, "", List.empty[WcBook])
 
-    def success(data: List[WcBook]) = ResponseEntity(200, "Book record successfully retrieved", data)
+    def success(data: List[WcBook]): ResponseEntity = ResponseEntity(200, "Book record successfully retrieved", data)
 
-    def failure400(message: String) = ResponseEntity(400, message, List.empty[WcBook])
+    def failure400(message: String): ResponseEntity = ResponseEntity(400, message, List.empty[WcBook])
 
-    def failure500(message: String) = ResponseEntity(500, message, List.empty[WcBook])
+    def failure500(message: String): ResponseEntity = ResponseEntity(500, message, List.empty[WcBook])
   }
 
   implicit val decodeResponseEntity: Decoder[ResponseEntity] = (c: HCursor) => for {

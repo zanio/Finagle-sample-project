@@ -22,3 +22,5 @@ case class InvalidInput(message: String) extends CommonError(message)
  * @param message
  */
 case class ExternalServiceError(message: String) extends CommonError(message)
+
+case class ParsingError(message: String) extends CommonError(message)

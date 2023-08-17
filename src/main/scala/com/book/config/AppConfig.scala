@@ -1,49 +1,26 @@
 package com.book.config
 
-import com.book.util.Logger
-import com.twitter.conversions.DurationOps.richDurationFromInt
-import com.twitter.finagle.http.{Request, Response}
-import com.twitter.finagle.redis.Client
-import com.twitter.finagle.{Http, Redis, Service, SimpleFilter}
 import com.typesafe.config.Config
 
-/**
- * Project working on ing_assessment
- * New File created by ani in  ing_assessment @ 15/08/2023  13:56
- */
-class AppConfig()(implicit val config: Config) extends Logger {
+trait AppConfig {
 
-  private val destination: String = config.getString("nytimes.host")
-  private val clientLabel = config.getString("nytimes.clientLabel")
+   private val config: Config = com.typesafe.config.ConfigFactory.load()
 
-  private val redisHost = config.getString("redis.host")
-  private val redisPort = config.getInt("redis.port")
-  private val redisPassword = config.getString("redis.password")
-  private val redisConnectionString = s"$redisHost:$redisPort"
+   val destination: String = config.getString("nytimes.host")
+   val clientLabel: String = config.getString("nytimes.clientLabel")
 
-  private val webClientConnectionString = s"$destination:443"
+   private val redisHost = config.getString("redis.host")
+   private val redisPort = config.getInt("redis.port")
+   val redisPassword: String = config.getString("redis.password")
+   val redisConnectionString = s"$redisHost:$redisPort"
 
+   val webClientConnectionString = s"$destination:443"
 
-  val logFilter: SimpleFilter[Request, Response] = (request: Request, service: Service[Request, Response]) => {
-    logger.info(s"Starting : ${request}")
-    service(request)
-  }
+   val nyTimesToken: String = config.getString("nytimes.apiKey")
+   val path: String = config.getString("nytimes.path")
 
-  def redisClient: Client =  {
-    val redisClient = Redis.newRichClient(redisConnectionString)
-    redisClient.auth(com.twitter.io.Buf.Utf8(redisPassword))
-    redisClient
-  }
+   val REDIS_TTL: Int = config.getInt("redis.ttl")
 
-
-  def makeWebClient : Service[Request, Response] =
-          Http.client
-            .withLabel(clientLabel)
-           .withRequestTimeout(6.second)
-           .filtered(logFilter)
-           .withSessionPool.maxSize(1)
-           .withTransport.tls(destination)
-           .newService(webClientConnectionString)
 }
 
 

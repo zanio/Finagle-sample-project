@@ -10,22 +10,16 @@ import com.twitter.finagle.redis.Client
 import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.io.Buf
 import com.twitter.util.Future
-import com.typesafe.config.Config
 import io.circe.syntax.EncoderOps
-/**
- * Project working on ing_assessment
- * New File created by ani in  ing_assessment @ 15/08/2023  16:32
- */
-class ResponseCachingFilter(cache: Client)(implicit val config: Config) extends SimpleFilter[Request, Response] with Logger{
+
+class ResponseCachingFilter(cache: Client) extends SimpleFilter[Request, Response] with Logger with AppConfig {
   import RestModel._
 
-    private val REDIS_TTL = config.getInt("redis.ttl")
 
-  def generateCacheKey(request: Request): String = {
+  private def generateCacheKey(request: Request): String = {
     val author = request.getParam("author")
     logger.info(s"Generating cache key for request: ${request.path}:$author")
     s"${request.path}:$author"
-
   }
 
   override def apply(request: Request, service: Service[Request, Response]): Future[Response] = {
@@ -37,26 +31,27 @@ class ResponseCachingFilter(cache: Client)(implicit val config: Config) extends 
     val cacheResponse = Response(request.version, com.twitter.finagle.http.Status.Ok)
 
     if(author == null || author.isEmpty){
-      return  proceedWithRequest(request, service, cacheKey, cacheKeyBuf, cacheResponse, filterResponseByDate)
-    }
-    if(filterResponseByDate.nonEmpty && !isValidYear(filterResponseByDate)){
+      proceedWithRequest(request, service, cacheKey, cacheKeyBuf, cacheResponse, filterResponseByDate)
+    } else if(filterResponseByDate.nonEmpty && !isValidYears(filterResponseByDate)){
       logger.info(s"Invalid year passed in request: $filterResponseByDate")
-      return  proceedWithRequest(request, service, cacheKey, cacheKeyBuf, cacheResponse, filterResponseByDate)
+      proceedWithRequest(request, service, cacheKey, cacheKeyBuf, cacheResponse, filterResponseByDate)
+    } else {
+      checkKey.flatMap {
+        case Some(value) =>
+          logger.info(s"Cache hit for key: $cacheKey")
+          val decodedListWcBook = com.twitter.io.Buf.Utf8.unapply(value) match {
+            case Some(redisValue) => decodeResponse(redisValue)
+          }
+          cacheResponse.contentString = filterResponse(filterResponseByDate,
+            decodedListWcBook.result).asJson(encodeResponseEntity).noSpaces
+          Future.value(cacheResponse)
+        case None =>
+          logger.info(s"Cache miss for key: $cacheKey")
+          proceedWithRequest(request, service, cacheKey, cacheKeyBuf, cacheResponse, filterResponseByDate)
+      }
     }
 
-    checkKey.flatMap {
-      case Some(value) =>
-        logger.info(s"Cache hit for key: $cacheKey")
-        val decodedListWcBook = com.twitter.io.Buf.Utf8.unapply(value) match {
-          case Some(redisValue) => decodeResponse(redisValue)
-        }
-        cacheResponse.contentString = filterResponse(filterResponseByDate,
-          decodedListWcBook.result).asJson(encodeResponseEntity).noSpaces
-        Future.value(cacheResponse)
-      case None =>
-        logger.info(s"Cache miss for key: $cacheKey")
-        proceedWithRequest(request, service, cacheKey, cacheKeyBuf, cacheResponse, filterResponseByDate)
-    }
+
 
   }
 
@@ -65,7 +60,7 @@ class ResponseCachingFilter(cache: Client)(implicit val config: Config) extends 
                                  cacheKey: String, cacheKeyBuf: Buf,
                                  cacheResponse: Response,
                                  filterResponseByDate: String) = {
-    service(request).flatMap { response =>
+    service(request).map { response =>
       if (response.status.code == 200 && response.getContentString().nonEmpty && request.path.contains("books")) {
         val resp = decodeResponse(response.getContentString())
 
@@ -73,9 +68,9 @@ class ResponseCachingFilter(cache: Client)(implicit val config: Config) extends 
         cache.setEx(cacheKeyBuf, REDIS_TTL.seconds.inLongSeconds,
           com.twitter.io.Buf.Utf8(resp.asJson(encodeResponseEntity).noSpaces))
         cacheResponse.contentString = filterResponse(filterResponseByDate, resp.result).asJson(encodeResponseEntity).noSpaces
-        Future.value(cacheResponse)
+        cacheResponse
       } else {
-        Future.value(response)
+        response
       }
     }
   }
@@ -90,8 +85,11 @@ class ResponseCachingFilter(cache: Client)(implicit val config: Config) extends 
   }
 
   private def filterResponse(filterResponseByDate: String, data: List[WcBook]):ResponseEntity = {
+    val years = filterResponseByDate.split(",").toList
     if (filterResponseByDate.nonEmpty) {
-      val filteredDataWcBookResponse = data.filter(_.year.contains(filterResponseByDate))
+      val filteredDataWcBookResponse = data.filter(book => {
+        years.exists(it => book.year.contains(it))}
+      )
       ResponseEntity.success(filteredDataWcBookResponse)
     } else {
       ResponseEntity.success(data)

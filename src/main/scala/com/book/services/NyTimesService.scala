@@ -1,27 +1,19 @@
 package com.book.services
 
-import com.book.{CommonError, ExternalServiceError}
+import com.book.config.AppConfig
 import com.book.models.WebClientModels._
+import com.book.util.Helper._
 import com.book.util.Logger
+import com.book.{CommonError, ExternalServiceError}
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.util.Future
-import com.book.util.Helper._
-import com.typesafe.config.Config
-import io.circe.generic.codec.DerivedAsObjectCodec.deriveCodec
-import io.circe.syntax.EncoderOps
 
-import java.time.LocalDate
-/**
- * Project working on ing_assessment
- * New File created by ani in  ing_assessment @ 15/08/2023  15:45
- */
-class NyTimesService(webClient: Service[Request, Response])(implicit val config: Config) extends Logger {
-  private val nyTimesToken = config.getString("nytimes.apiKey")
-  private val path = config.getString("nytimes.path")
+class NyTimesService(webClient: Service[Request, Response]) extends Logger with AppConfig{
 
   /**
-   * This method is used to get the books from nytimes api, it calls the @{path} with the author and api key
+   * This method is used to get the books from nytimes api,
+   * it calls the @{path} with the author and api key
    * @param author
    * @return
    */
@@ -31,15 +23,16 @@ class NyTimesService(webClient: Service[Request, Response])(implicit val config:
     logger.info(s"Request received for getBooks : ${request.path} and the path is : ${bookHistoryPath}")
     request.method(com.twitter.finagle.http.Method.Get)
     val response = webClient(request)
-    response.flatMap(resp => {
+    response.map(resp => {
       val content = resp.getContentString()
-      val bookResponse = parseObj[WebclientResponse](content)
-      val books = bookResponse.results.map(item => {
-        val publishedDate = item.ranks_history.headOption.flatMap(_.published_date.map(_.getYear.toString))
-        WcBook(item.title, item.author, publishedDate,item.publisher)
-      }).toList
-      logger.info(s"Response received for getBooks : ${books.size}")
-      Future.value(Right(WcBookResponse(books)))
+      parseObj[WebclientResponse](content) .map { bookResponse =>
+        val books = bookResponse.results.map(item => {
+          val publishedDate = item.ranks_history.headOption.flatMap(_.published_date.map(_.getYear.toString))
+          WcBook(item.title, item.author, publishedDate, item.publisher)
+        }).toList
+        logger.info(s"Response received for getBooks : ${books.size}")
+        WcBookResponse(books)
+      }
     })
       .onFailure(ex => {
         logger.error(s"Error occurred while trying to process request : ${ex.getMessage}")

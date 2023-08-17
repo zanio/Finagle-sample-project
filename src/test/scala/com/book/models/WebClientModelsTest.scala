@@ -6,11 +6,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import io.circe.parser.decode
 import org.scalacheck.Prop.forAll
-/**
- * Project working on ing_assessment
- * New File created by ani in  ing_assessment @ 17/08/2023  06:34
- */
-class WebClientModelsTest extends AnyFlatSpec with Matchers {
+
+final class WebClientModelsTest extends AnyFlatSpec with Matchers {
 
   import com.book.models.WebClientModels._
   import com.book.util.ArbitraryGenerators._

@@ -3,10 +3,6 @@ package com.book.util
 import com.book.models.RestModel.ResponseEntity
 
 
-/**
- * Project working on ing_assessment
- * New File created by ani in  ing_assessment @ 17/08/2023  06:58
- */
 object ArbitraryGenerators {
 
   import org.scalacheck.Arbitrary

@@ -11,21 +11,15 @@ import org.mockito.MockitoSugar
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-/**
- * Project working on ing_assessment
- * New File created by ani in  ing_assessment @ 17/08/2023  11:43
- */
 
-class ResponseCachingFilterTest extends AnyFlatSpec with Matchers with MockitoSugar {
+final class ResponseCachingFilterTest extends AnyFlatSpec with Matchers with MockitoSugar {
   implicit val config:Config = ConfigFactory.load()
   it should "return cached response for cache hit" in {
 
     val mockCache = mock[Client]
     val mockService = mock[Service[Request, Response]]
 
-      // my json structure has changed, so I have to change the cacheHitJson
-    // ResponseEntity
-    val cacheHitJson = makeResponEntityJson
+    val cacheHitJson = makeResponseEntityJson
 
     when(mockCache.get(any())).thenReturn(Future.value(Some(Buf.Utf8(cacheHitJson))))
 
@@ -51,7 +45,7 @@ class ResponseCachingFilterTest extends AnyFlatSpec with Matchers with MockitoSu
     when(mockCache.get(any())).thenReturn(Future.value(None))
 
     val mockResponse = Response(Status.Ok)
-    mockResponse.contentString = makeResponEntityJson
+    mockResponse.contentString = makeResponseEntityJson
     when(mockService(any())).thenReturn(Future.value(mockResponse))
 
     val cachingFilter = new ResponseCachingFilter(mockCache)
@@ -72,7 +66,7 @@ class ResponseCachingFilterTest extends AnyFlatSpec with Matchers with MockitoSu
         include("Addison-Wesley Professional"))
   }
 
-  def makeResponEntityJson: String = {
+  def makeResponseEntityJson: String = {
     """{
       |  "status": "200",
       |  "message": "Book record successfully retrieved",
