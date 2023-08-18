@@ -12,6 +12,7 @@ object RestModel {
     def success(data: List[WcBook]): ResponseEntity = ResponseEntity(200, "Book record successfully retrieved", data)
 
     def failure400(message: String): ResponseEntity = ResponseEntity(400, message, List.empty[WcBook])
+    def failure404(message: String): ResponseEntity = ResponseEntity(404, message, List.empty[WcBook])
 
     def failure500(message: String): ResponseEntity = ResponseEntity(500, message, List.empty[WcBook])
   }

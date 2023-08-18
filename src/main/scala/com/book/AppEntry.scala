@@ -1,9 +1,9 @@
 package com.book
 
 import com.book.clients.ClientSetUp
-import com.book.config.{AppConfig, ResponseCachingFilter}
+import com.book.config.{AppConfig, NotFoundRequestFilter, ResponseCachingFilter}
 import com.book.services.NyTimesService
-import com.twitter.finagle.http.{Request, Response}
+import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Http, Service}
 import com.twitter.server.TwitterServer
 import com.twitter.util.Await
@@ -19,8 +19,9 @@ object AppEntry extends TwitterServer with AppConfig {
   private val apis = new RestApi(nyTimesService).endpoints
   private val redisConnector = ClientSetUp.redisClient
   private val cacheFilter = new ResponseCachingFilter(redisConnector)
+  private val notFoundFilter = new NotFoundRequestFilter(Response(Status.NotFound))
 
-  def service: Service[Request, Response] = cacheFilter andThen  Bootstrap
+  def service: Service[Request, Response] =  notFoundFilter andThen cacheFilter andThen Bootstrap
     .serve[Application.Json](apis)
     .toService
 

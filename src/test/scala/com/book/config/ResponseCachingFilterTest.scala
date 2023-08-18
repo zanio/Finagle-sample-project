@@ -25,7 +25,7 @@ final class ResponseCachingFilterTest extends AnyFlatSpec with Matchers with Moc
 
     val cachingFilter = new ResponseCachingFilter(mockCache)
 
-    val request = Request("/?author=Author1")
+    val request = Request("/me/books/list?author=Author1")
     val response: Response = Await.result(cachingFilter(request, mockService))
 
     verify(mockCache).get(any())
@@ -50,7 +50,7 @@ final class ResponseCachingFilterTest extends AnyFlatSpec with Matchers with Moc
 
     val cachingFilter = new ResponseCachingFilter(mockCache)
 
-    val request = Request("/?author=Author1")
+    val request = Request("/me/books/list?author=Author1")
 
     val response: Response = Await.result(cachingFilter(request, mockService))
 
@@ -64,6 +64,27 @@ final class ResponseCachingFilterTest extends AnyFlatSpec with Matchers with Moc
         include("Author 1") and
         include("2020") and
         include("Addison-Wesley Professional"))
+  }
+
+  it should "Proceed with the request if the path isn't cacheable" in  {
+    val mockCache = mock[Client]
+    val mockService = mock[Service[Request, Response]]
+
+    val mockResponse = Response(Status.Ok)
+    mockResponse.contentString = makeResponseEntityJson
+    when(mockService(any())).thenReturn(Future.value(mockResponse))
+
+    val cachingFilter = new ResponseCachingFilter(mockCache)
+
+    val request = Request("/me/books/")
+
+    val response: Response = Await.result(cachingFilter(request, mockService))
+
+    verify(mockCache, never).get(any())
+
+    verify(mockService).apply(any())
+
+    response.status shouldBe Status.Ok
   }
 
   def makeResponseEntityJson: String = {

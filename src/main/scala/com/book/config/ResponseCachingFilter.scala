@@ -12,6 +12,10 @@ import com.twitter.io.Buf
 import com.twitter.util.Future
 import io.circe.syntax.EncoderOps
 
+/**
+ * This filter is responsible for caching the response from the web client when the request path is = /me/books/list
+ * @param cache
+ */
 class ResponseCachingFilter(cache: Client) extends SimpleFilter[Request, Response] with Logger with AppConfig {
   import RestModel._
 
@@ -23,6 +27,15 @@ class ResponseCachingFilter(cache: Client) extends SimpleFilter[Request, Respons
   }
 
   override def apply(request: Request, service: Service[Request, Response]): Future[Response] = {
+    if(request.path == "/me/books/list"){
+      logger.info(s"Request path: ${request.path}")
+      handleCache(request, service)
+    } else {
+      service(request)
+    }
+  }
+
+  private def handleCache(request: Request, service: Service[Request, Response]) = {
     val cacheKey = generateCacheKey(request)
     val cacheKeyBuf = com.twitter.io.Buf.Utf8(cacheKey)
     val checkKey = cache.get(cacheKeyBuf)
@@ -30,9 +43,9 @@ class ResponseCachingFilter(cache: Client) extends SimpleFilter[Request, Respons
     val author = request.getParam("author")
     val cacheResponse = Response(request.version, com.twitter.finagle.http.Status.Ok)
 
-    if(author == null || author.isEmpty){
+    if (author == null || author.isEmpty) {
       proceedWithRequest(request, service, cacheKey, cacheKeyBuf, cacheResponse, filterResponseByDate)
-    } else if(filterResponseByDate.nonEmpty && !isValidYears(filterResponseByDate)){
+    } else if (filterResponseByDate.nonEmpty && !isValidYears(filterResponseByDate)) {
       logger.info(s"Invalid year passed in request: $filterResponseByDate")
       proceedWithRequest(request, service, cacheKey, cacheKeyBuf, cacheResponse, filterResponseByDate)
     } else {
@@ -50,9 +63,6 @@ class ResponseCachingFilter(cache: Client) extends SimpleFilter[Request, Respons
           proceedWithRequest(request, service, cacheKey, cacheKeyBuf, cacheResponse, filterResponseByDate)
       }
     }
-
-
-
   }
 
   private def proceedWithRequest(request: Request,

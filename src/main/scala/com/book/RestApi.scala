@@ -16,7 +16,7 @@ final class RestApi(nyTimesService: NyTimesService) extends Logger{
 
   private val basePath = "me" :: "books" :: "list"
   private val beBlankAuthor = ValidationRule[String](s"be blank") { item =>item.trim.isBlank}
-  private val beValidYear: ValidationRule[String] = ValidationRule("be a valid year, e.g. '2017'") { isValidYears}
+  private val beValidYear: ValidationRule[String] = ValidationRule("be a valid year, e.g. '2017 or 2018,2019'") { isValidYears}
 
 
   private val validAuthor: Endpoint[IO, String] = param("author").shouldNot(beBlankAuthor)
