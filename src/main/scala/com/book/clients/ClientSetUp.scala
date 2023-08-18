@@ -20,9 +20,8 @@ object ClientSetUp  extends Logger with AppConfig{
   def makeWebClient: Service[Request, Response] =
     Http.client
       .withLabel(clientLabel)
-      .withRequestTimeout(6.second)
+      .withRequestTimeout(10.second)
       .filtered(logFilter)
-      .withSessionPool.maxSize(1)
       .withTransport.tls(destination)
       .newService(webClientConnectionString)
 }

@@ -29,6 +29,8 @@ object AppEntry extends TwitterServer with AppConfig {
     val server = Http.server.serve(":8081", service)
     onExit {
       server.close()
+      Await.result(server)
+      Await.result(redisConnector.close())
     }
     Await.ready(server)
   }
