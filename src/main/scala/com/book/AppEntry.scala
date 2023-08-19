@@ -6,7 +6,7 @@ import com.book.services.NyTimesService
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Http, Service}
 import com.twitter.server.TwitterServer
-import com.twitter.util.Await
+import com.twitter.util.{Await, Duration}
 import io.circe.generic.auto._
 import io.finch._
 import io.finch.circe._
@@ -26,11 +26,16 @@ object AppEntry extends TwitterServer with AppConfig {
     .toService
 
   def main(): Unit = {
-    val server = Http.server.serve(":8081", service)
+    val server = Http.server
+      .withLabel("ING_Assessment")
+      .withRequestTimeout(Duration.fromMinutes(20))
+      .serve(":8081", service)
+
     onExit {
       server.close()
       Await.result(server)
       Await.result(redisConnector.close())
+      Await.result(webClient.close())
     }
     Await.ready(server)
   }

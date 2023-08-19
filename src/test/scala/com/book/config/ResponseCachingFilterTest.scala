@@ -91,6 +91,7 @@ final class ResponseCachingFilterTest extends AnyFlatSpec with Matchers with Moc
     """{
       |  "status": "200",
       |  "message": "Book record successfully retrieved",
+      |  "count": 2,
       |  "result": [
       |      {
       |        "title": "Book 1",

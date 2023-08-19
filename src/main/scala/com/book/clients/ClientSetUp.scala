@@ -5,10 +5,14 @@ import com.twitter.conversions.DurationOps.richDurationFromInt
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.finagle.redis.Client
 import com.twitter.finagle.{Http, Redis, Service, SimpleFilter}
+import com.twitter.util.Future
 object ClientSetUp  extends Logger with AppConfig{
 
-  private val logFilter: SimpleFilter[Request, Response] = (request: Request, service: Service[Request, Response]) => {
-    logger.info(s"Starting : ${request}")
+  private def logFilter(message: String): SimpleFilter[Request, Response] = (request: Request, service: Service[Request, Response]) => {
+    if(request.isRequest){
+      logger.info(s"$message : ${request.uri}")
+    } else logger.info(s"$message : ${request.contentLength}")
+
     service(request)
   }
   def redisClient: Client = {
@@ -21,7 +25,8 @@ object ClientSetUp  extends Logger with AppConfig{
     Http.client
       .withLabel(clientLabel)
       .withRequestTimeout(10.second)
-      .filtered(logFilter)
+      .filtered(logFilter("Sending request to web client"))
+      .withHttp2
       .withTransport.tls(destination)
       .newService(webClientConnectionString)
 }

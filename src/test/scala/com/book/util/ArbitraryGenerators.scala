@@ -30,7 +30,7 @@ object ArbitraryGenerators {
       status <- Gen.choose(200, 500)
       message <- Gen.alphaStr
       data <- arbWcBookResponse.arbitrary
-    } yield ResponseEntity(status, message, data.books)
+    } yield ResponseEntity(status, message, data.books.size, data.books)
   }
 
 }
