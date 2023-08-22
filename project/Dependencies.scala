@@ -8,7 +8,7 @@ object Dependencies {
   lazy val mockito = "org.mockito" %% "mockito-scala" % "1.16.46" % Test
 
   lazy val logback = "ch.qos.logback" % "logback-classic" % "1.4.7"
-  lazy val config = "com.typesafe" % "config" % "1.4.2"
+  lazy val typeSafeConfig = "com.typesafe" % "config" % "1.4.2"
   lazy val finchxCore = "com.github.finagle" %% "finchx-core" % finchVersion
   lazy val finchxCirce = "com.github.finagle" %% "finchx-circe" % finchVersion
   lazy val circeGeneric = "io.circe" %% "circe-generic" % circeVersion

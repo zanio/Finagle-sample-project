@@ -14,7 +14,7 @@ lazy val root = (project in file("."))
       mockito,
       scalatest % Test,
       logback,
-      config,
+      typeSafeConfig,
       finchxCore,
       finchxCirce,
       circeGeneric,
