@@ -9,8 +9,8 @@ trait AppConfig {
    val destination: String = config.getString("nytimes.host")
    val clientLabel: String = config.getString("nytimes.clientLabel")
 
-   private val redisHost = config.getString("redis.host")
-   private val redisPort = config.getInt("redis.port")
+    val redisHost = config.getString("redis.host")
+    val redisPort = config.getInt("redis.port")
    val redisPassword: String = config.getString("redis.password")
    val redisConnectionString = s"$redisHost:$redisPort"
 

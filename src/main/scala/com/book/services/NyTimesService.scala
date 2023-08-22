@@ -56,7 +56,7 @@ class NyTimesService(webClient: Service[Request, Response]) extends Logger with 
   }
 
   private def makeNestedRequest(bookHistoryPath: String, numberOfRequest: Int, firstWcBookResponse: Either[CommonError, List[WcBook]]): Future[Seq[Either[CommonError, List[WcBook]]]] = {
-    val range = (2 to numberOfRequest).toList.map(it => makeRateLimitedRequest(Request(s"${bookHistoryPath}&offset=${it * 20}")))
+    val range = (1 to numberOfRequest).toList.map(it => makeRateLimitedRequest(Request(s"${bookHistoryPath}&offset=${it * 20}")))
     val futureResponse = Future.collect(range)
     futureResponse.map(nestedResponse => {
       logger.info(s"Response received for makeNestedRequest : ${nestedResponse.size}")
@@ -72,6 +72,7 @@ class NyTimesService(webClient: Service[Request, Response]) extends Logger with 
 
         })
       } :+ firstWcBookResponse
+      logger.info(s"Response received for makeNestedRequest : ${nestedBooks.size}")
       nestedBooks
     }).onFailure(ex => {
       logger.error(s"Error occurred while trying to process request : ${ex.getMessage}")

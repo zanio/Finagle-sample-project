@@ -1,5 +1,7 @@
 package com.book.config
 
+import com.book.CommonError
+import com.book.clients.ClientSetUp.RedisCache
 import com.book.models.RestModel
 import com.book.models.WebClientModels.WcBook
 import com.book.util.Helper._
@@ -16,7 +18,7 @@ import io.circe.syntax.EncoderOps
  * This filter is responsible for caching the response from the web client when the request path is = /me/books/list
  * @param cache
  */
-class ResponseCachingFilter(cache: Client) extends SimpleFilter[Request, Response] with Logger with AppConfig {
+class ResponseCachingFilter(cache: RedisCache) extends SimpleFilter[Request, Response] with Logger with AppConfig {
   import RestModel._
 
 
@@ -37,37 +39,43 @@ class ResponseCachingFilter(cache: Client) extends SimpleFilter[Request, Respons
 
   private def handleCache(request: Request, service: Service[Request, Response]) = {
     val cacheKey = generateCacheKey(request)
-    val cacheKeyBuf = com.twitter.io.Buf.Utf8(cacheKey)
-    val checkKey = cache.get(cacheKeyBuf)
+    logger.info(s"Cache key: $cacheKey")
+    val eitherCacheKey: Either[CommonError, Future[Option[Buf]]] = cache.get(cacheKey)
     val filterResponseByDate = request.getParam("year", "")
     val author = request.getParam("author")
     val cacheResponse = Response(request.version, com.twitter.finagle.http.Status.Ok)
 
     if (author == null || author.isEmpty) {
-      proceedWithRequest(request, service, cacheKey, cacheKeyBuf, cacheResponse, filterResponseByDate)
+      proceedWithRequest(request, service, cacheKey, cacheResponse, filterResponseByDate)
     } else if (filterResponseByDate.nonEmpty && !isValidYears(filterResponseByDate)) {
       logger.info(s"Invalid year passed in request: $filterResponseByDate")
-      proceedWithRequest(request, service, cacheKey, cacheKeyBuf, cacheResponse, filterResponseByDate)
+      proceedWithRequest(request, service, cacheKey, cacheResponse, filterResponseByDate)
     } else {
-      checkKey.flatMap {
-        case Some(value) =>
-          logger.info(s"Cache hit for key: $cacheKey")
-          val decodedListWcBook = com.twitter.io.Buf.Utf8.unapply(value) match {
-            case Some(redisValue) => decodeResponse(redisValue)
-          }
-          cacheResponse.contentString = filterResponse(filterResponseByDate,
-            decodedListWcBook.result).asJson(encodeResponseEntity).noSpaces
-          Future.value(cacheResponse)
-        case None =>
-          logger.info(s"Cache miss for key: $cacheKey")
-          proceedWithRequest(request, service, cacheKey, cacheKeyBuf, cacheResponse, filterResponseByDate)
+      eitherCacheKey match {
+        case Left(value) =>
+          logger.error(s"Error occurred while trying to get cache: $value")
+          proceedWithRequest(request, service, cacheKey, cacheResponse, filterResponseByDate)
+        case Right(value) =>
+          value.flatMap {
+            case Some(value) =>
+              logger.info(s"Cache hit for key: $cacheKey")
+              val decodedListWcBook = com.twitter.io.Buf.Utf8.unapply(value) match {
+                case Some(redisValue) => decodeResponse(redisValue)
+              }
+              cacheResponse.contentString = filterResponse(filterResponseByDate,
+                decodedListWcBook.result).asJson(encodeResponseEntity).noSpaces
+              Future.value(cacheResponse)
+            case None =>
+              logger.info(s"Cache miss for key: $cacheKey")
+              proceedWithRequest(request, service, cacheKey, cacheResponse, filterResponseByDate)
+          }.onFailure(ex => logger.error(s"Error occurred while trying to get cache: $ex"))
       }
     }
   }
 
   private def proceedWithRequest(request: Request,
                                  service: Service[Request, Response],
-                                 cacheKey: String, cacheKeyBuf: Buf,
+                                 cacheKey: String,
                                  cacheResponse: Response,
                                  filterResponseByDate: String) = {
     service(request).map { response =>
@@ -75,8 +83,7 @@ class ResponseCachingFilter(cache: Client) extends SimpleFilter[Request, Respons
         val resp = decodeResponse(response.getContentString())
 
         logger.info(s"Setting cache for key: $cacheKey")
-        cache.setEx(cacheKeyBuf, REDIS_TTL.seconds.inLongSeconds,
-          com.twitter.io.Buf.Utf8(resp.asJson(encodeResponseEntity).noSpaces))
+        cache.set(cacheKey, resp.asJson(encodeResponseEntity).noSpaces)
         cacheResponse.contentString = filterResponse(filterResponseByDate, resp.result).asJson(encodeResponseEntity).noSpaces
         cacheResponse
       } else {

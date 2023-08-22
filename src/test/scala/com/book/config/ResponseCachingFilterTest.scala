@@ -1,5 +1,6 @@
 package com.book.config
 
+import com.book.clients.ClientSetUp.RedisCache
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.redis.Client
@@ -16,12 +17,13 @@ final class ResponseCachingFilterTest extends AnyFlatSpec with Matchers with Moc
   implicit val config:Config = ConfigFactory.load()
   it should "return cached response for cache hit" in {
 
-    val mockCache = mock[Client]
+    val mockCache = mock[RedisCache]
     val mockService = mock[Service[Request, Response]]
 
     val cacheHitJson = makeResponseEntityJson
 
-    when(mockCache.get(any())).thenReturn(Future.value(Some(Buf.Utf8(cacheHitJson))))
+    when(mockCache.get(any())).thenReturn(Right(Future.value(Some(Buf.Utf8(cacheHitJson)))))
+    when(mockService(any())).thenReturn(Future.value(Response(Status.Ok)))
 
     val cachingFilter = new ResponseCachingFilter(mockCache)
 
@@ -39,10 +41,10 @@ final class ResponseCachingFilterTest extends AnyFlatSpec with Matchers with Moc
   }
 
   it should "return original response for cache miss" in {
-    val mockCache = mock[Client]
+    val mockCache = mock[RedisCache]
     val mockService = mock[Service[Request, Response]]
 
-    when(mockCache.get(any())).thenReturn(Future.value(None))
+    when(mockCache.get(any())).thenReturn(Right(Future.value(None)))
 
     val mockResponse = Response(Status.Ok)
     mockResponse.contentString = makeResponseEntityJson
@@ -67,7 +69,7 @@ final class ResponseCachingFilterTest extends AnyFlatSpec with Matchers with Moc
   }
 
   it should "Proceed with the request if the path isn't cacheable" in  {
-    val mockCache = mock[Client]
+    val mockCache = mock[RedisCache]
     val mockService = mock[Service[Request, Response]]
 
     val mockResponse = Response(Status.Ok)
