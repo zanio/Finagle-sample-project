@@ -1,5 +1,5 @@
-# ING_Assessment
-An assessment from ING to be completed using Finagle. This application is a REST API that communicates with an external service called nytimes
+# Finagle sample project
+A sample project to demonstrate how to use finagle-http in communicating with external services. This application is a REST API that communicates with an external service called nytimes
 
 ## Requirements
 * Java 11
